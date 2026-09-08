@@ -1,0 +1,10 @@
+{
+  "name": "planwire-planning-search-example",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A minimal server-side PlanWire council planning search example",
+  "engines": { "node": ">=22" },
+  "scripts": { "start": "node search.mjs", "test": "node --test search.test.mjs" },
+  "license": "MIT"
+}
