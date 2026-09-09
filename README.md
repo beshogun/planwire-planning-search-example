@@ -1,5 +1,34 @@
 # PlanWire Planning Search Example
 
+## Python and Postman
+
+Python 3.10+ needs no dependencies. Set `PLANWIRE_API_KEY` in your local/server
+environment, then run `python3 search.py richmond-thames`. Avoid pasting real keys
+into shell history, source files or public workspaces. Run the synthetic tests
+with `python3 -m unittest discover -p 'test_*.py'`.
+
+The Python example makes one request, returns at most five records, rejects
+redirects, uses a 15-second socket timeout and limits the response body to 2 MB.
+It does not retry or paginate automatically. Keep returned data private unless
+your licence permits sharing it. This is a reference example, not a maintained SDK.
+
+[Read the Python tutorial](https://planwire.io/blog/search-uk-planning-applications-python).
+
+Import `planwire.postman_collection.json` into your own Postman workspace.
+Set `apiKey` as a **local, unshared environment variable**, leaving its shared
+value empty. Do not save real response examples to a public collection.
+Set Postman's request timeout to 15000 ms and run requests individually.
+Search and coverage accept sample keys; record lookup is subject to plan access.
+For webhook recovery, supply an existing webhook ID owned by your paid key.
+The collection does not create subscriptions, retry, paginate or update cursors.
+Publish only this placeholder collection in a new dedicated public workspace,
+never an existing private workspace containing credentials or internal work.
+
+Next: [signed webhooks and durable recovery](https://planwire.io/planning-webhooks)
+and the [monitoring-cache example](https://planwire.io/examples/monitoring-cache/README.md).
+
+## Node.js
+
 A small, dependency-free Node.js example for evaluating one council through the
 [PlanWire planning applications API](https://planwire.io/planning-applications-api).
 It makes one authenticated GET request and prints the JSON response, including

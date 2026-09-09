@@ -1,0 +1,90 @@
+{
+  "info": {
+    "name": "PlanWire UK Planning API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Evaluate UK planning data with read-only search, record lookup, coverage and webhook recovery requests. Published by PlanWire.\n\nStart: https://planwire.io/blog/search-uk-planning-applications-python\nDocs: https://planwire.io/docs\nGet a key: https://planwire.io/#signup\n\nFork/import into your own workspace. Set apiKey as a LOCAL, unshared environment variable. Never add a real key to this public collection or save authenticated responses as public examples. All published variables are empty or non-secret placeholders. Set a 15000ms request timeout in Postman Settings. Redirect following is disabled for each request.\n\nRun requests individually. Search and coverage work with sample access; free keys return limited/older samples, not complete current coverage. Record lookup needs an ID returned by your search and appropriate plan access. Webhook recovery requires an existing webhook owned by your key; free keys cannot create webhooks. This collection creates or deletes nothing. Requests consume your plan allowance. It does not automatically paginate, retry, capture IDs or advance recovery cursors.\n\nPlanning records are not proof of construction starts or materials orders. API availability is separate from council-data freshness. Check coverage and source evidence for your area. API data use remains subject to https://planwire.io/terms ."
+  },
+  "auth": {"type": "apikey", "apikey": [
+    {"key": "key", "value": "X-API-Key", "type": "string"},
+    {"key": "value", "value": "{{apiKey}}", "type": "string"},
+    {"key": "in", "value": "header", "type": "string"}
+  ]},
+  "variable": [
+    {"key": "apiKey", "value": "", "type": "string"},
+    {"key": "council", "value": "richmond-thames", "type": "string"},
+    {"key": "applicationId", "value": "", "type": "string"},
+    {"key": "webhookId", "value": "", "type": "string"},
+    {"key": "after", "value": "0", "type": "string"}
+  ],
+  "event": [{"listen": "prerequest", "script": {"type": "text/javascript", "exec": [
+    "const key = pm.variables.get('apiKey');",
+    "if (typeof key !== 'string' || !key.trim() || /[^\\x20-\\x7E]/.test(key)) {",
+    "  pm.execution.skipRequest();",
+    "  throw new Error('Set apiKey locally in your private environment; do not share it.');",
+    "}"
+  ]}}],
+  "item": [
+    {
+      "name": "1. Search council applications (five-record sample)",
+      "protocolProfileBehavior": {"followRedirects": false},
+      "request": {
+        "method": "GET", "header": [{"key": "Accept", "value": "application/json"}],
+        "url": "https://api.planwire.io/v1/applications?council={{council}}&limit=5",
+        "description": "Choose a council ID from https://planwire.io/coverage . Inspect data and meta, missing fields and source links. Free results may be old, empty or restricted; this is not a completeness assessment. Copy a returned data[].id into your LOCAL applicationId variable for request 2."
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('Search succeeds', () => pm.response.to.have.status(200));",
+        "pm.test('Bounded data array', () => { const body = pm.response.json(); pm.expect(body.data).to.be.an('array'); pm.expect(body.data.length).to.be.at.most(5); });"
+      ]}}]
+    },
+    {
+      "name": "2. Look up an application by returned ID",
+      "protocolProfileBehavior": {"followRedirects": false},
+      "request": {
+        "method": "GET", "header": [{"key": "Accept", "value": "application/json"}],
+        "url": "https://api.planwire.io/v1/applications/{{applicationId}}",
+        "description": "Requires an application UUID returned by your search, not a council reference. A 403 can indicate plan restrictions; a 404 is not a successful lookup. Preserve source evidence and treat missing fields as unknown."
+      },
+      "event": [
+        {"listen": "prerequest", "script": {"type": "text/javascript", "exec": [
+          "if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pm.variables.get('applicationId') || '')) { pm.execution.skipRequest(); throw new Error('Set applicationId locally to an ID returned by search.'); }"
+        ]}},
+        {"listen": "test", "script": {"type": "text/javascript", "exec": [
+          "pm.test('Lookup succeeds', () => pm.response.to.have.status(200));",
+          "pm.test('Returned record matches', () => pm.expect(pm.response.json().data.id).to.equal(pm.variables.get('applicationId')));"
+        ]}}
+      ]
+    },
+    {
+      "name": "3. Inspect council coverage",
+      "protocolProfileBehavior": {"followRedirects": false},
+      "request": {
+        "method": "GET", "header": [{"key": "Accept", "value": "application/json"}],
+        "url": "https://api.planwire.io/v1/councils",
+        "description": "Paid keys receive the council catalogue; free keys receive a limited redacted preview. Review source health and dates, not just council count. API uptime does not establish council-data freshness. See https://planwire.io/coverage ."
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('Coverage succeeds', () => pm.response.to.have.status(200));",
+        "pm.test('Council array returned', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+      ]}}]
+    },
+    {
+      "name": "4. Recover one page of webhook events (existing paid subscription)",
+      "protocolProfileBehavior": {"followRedirects": false},
+      "request": {
+        "method": "GET", "header": [{"key": "Accept", "value": "application/json"}],
+        "url": "https://api.planwire.io/v1/webhooks/{{webhookId}}/events?after={{after}}&limit=5",
+        "description": "Set webhookId locally to an existing webhook owned by your key. after=0 starts at available retained events, not historical council changes. Deduplicate by payload.id. Persist the COMPLETE page before saving meta.nextCursor; continue only while meta.hasMore. This collection deliberately does not advance after for you. Retention is at least 30 days while the webhook exists; deleting it deletes its stream. Recovery requests consume API allowance. /missed is an attempt log, not this recovery feed. A 503 means recovery is unavailable, not an empty stream. Signed receiver and durable-cache example: https://planwire.io/examples/monitoring-cache/README.md . Guide: https://planwire.io/planning-webhooks ."
+      },
+      "event": [
+        {"listen": "prerequest", "script": {"type": "text/javascript", "exec": [
+          "if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pm.variables.get('webhookId') || '') || !/^[0-9]{1,18}$/.test(pm.variables.get('after') || '')) { pm.execution.skipRequest(); throw new Error('Set a valid webhookId and numeric after cursor locally.'); }"
+        ]}},
+        {"listen": "test", "script": {"type": "text/javascript", "exec": [
+          "pm.test('Recovery succeeds', () => pm.response.to.have.status(200));",
+          "pm.test('Recovery page contract', () => { const body = pm.response.json(); pm.expect(body.data).to.be.an('array'); pm.expect(body.data.length).to.be.at.most(5); pm.expect(body.meta.hasMore).to.be.a('boolean'); pm.expect(body.meta).to.have.property('nextCursor'); });"
+        ]}}
+      ]
+    }
+  ]
+}
