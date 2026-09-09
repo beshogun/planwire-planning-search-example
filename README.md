@@ -14,7 +14,8 @@ your licence permits sharing it. This is a reference example, not a maintained S
 
 [Read the Python tutorial](https://planwire.io/blog/search-uk-planning-applications-python).
 
-Import `planwire.postman_collection.json` into your own Postman workspace.
+Open the [public Postman collection](https://www.postman.com/bennroyys-team/planwire-uk-planning-api/collection/e8nwkju/planwire-uk-planning-api)
+or import `planwire.postman_collection.json` into your own Postman workspace.
 Set `apiKey` as a **local, unshared environment variable**, leaving its shared
 value empty. Do not save real response examples to a public collection.
 Set Postman's request timeout to 15000 ms and run requests individually.
